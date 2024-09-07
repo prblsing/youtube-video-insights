@@ -9,4 +9,5 @@ scikit-learn==1.2.2
 numpy==1.24.3
 deepmultilingualpunctuation==1.0.1
 sentence-transformers==2.2.2
-summarizer~=0.0.7
+summarizer==0.0.7
+tokenizers==0.13.3
