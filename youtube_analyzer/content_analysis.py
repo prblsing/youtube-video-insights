@@ -19,18 +19,18 @@ class ContentAnalysis:
         Trim the input first, then summarize, and restore punctuation.
         """
         # Trim input to max 3000 characters and to the nearest sentence
-        if len(text) > 3000:
-            text = self._trim_to_nearest_sentence(text[:3000])
+        if len(text) > 5000:
+            text = self._trim_to_nearest_sentence(text[:5000])
 
         # Summarize the trimmed text
-        summary = summarizer(text, max_length=150, min_length=40, do_sample=False)[0]['summary_text']
+        summary = summarizer(text, max_length=500, min_length=150, do_sample=False)[0]['summary_text']
 
         # Clean the final summary
         cleaned_summary = clean_special_characters(summary)
 
         # If the cleaned summary exceeds 1200 characters, trim to the nearest sentence
-        if len(cleaned_summary) > 1200:
-            cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:1200])
+        if len(cleaned_summary) > 3000:
+            cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:3000])
 
         # Restore punctuation
         punctuated_summary = self.punctuator.restore_punctuation(cleaned_summary)
