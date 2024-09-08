@@ -1,86 +1,45 @@
 from transformers import pipeline
 from deepmultilingualpunctuation import PunctuationModel
-import nltk
-from youtube_analyzer.config import LLM_MODEL_FB, SUMMARIZATION_MODEL_FB, LLM_MODEL_MS
-from langchain.llms import HuggingFacePipeline
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from transformers import pipeline
-
-nltk.download('punkt')
+from youtube_analyzer.config import SUMMARIZATION_MODEL_FB
 from nltk.tokenize import sent_tokenize
-from transformers import BartTokenizer, BartForConditionalGeneration
 import re
 
-model = BartForConditionalGeneration.from_pretrained(SUMMARIZATION_MODEL_FB)
-tokenizer = BartTokenizer.from_pretrained(SUMMARIZATION_MODEL_FB)
-
-
-def clean_special_characters(text):
-    # Remove special characters and extra whitespace
-    return re.sub(r"[^\w\s]", "", text)
-
-
-def summarize(text):
-    inputs = tokenizer.encode(text, return_tensors="pt", max_length=1024, truncation=True)
-    outputs = model.generate(inputs, max_length=150, min_length=40, length_penalty=2.0, num_beams=4,
-                             early_stopping=True)
-    return tokenizer.decode(outputs[0])
-
-
-def rephrase_summary(text):
-    pipe_rp = pipeline("text-generation", model=LLM_MODEL_FB)
-    prompt = f"Summarize the following text into a brief overview that explains what this video will cover, " \
-             f"the main topics discussed, and what the viewer can expect to learn: {text} "
-    generated_text = pipe_rp(prompt, max_length=150, num_return_sequences=1, do_sample=False)
-    print(f"{generated_text=}")
-
-    return generated_text[0]["generated_text"]
+# Load summarization and punctuation restoration models
+summarizer = pipeline("summarization", model=SUMMARIZATION_MODEL_FB)
+punctuator = PunctuationModel()
 
 
 class ContentAnalysis:
     def __init__(self):
-        self.summarizer = pipeline("summarization", model=SUMMARIZATION_MODEL_FB)
-        self.punctuator = PunctuationModel()
+        self.punctuator = punctuator
 
-    def generate_concise_summary(self, text, max_length=100, min_length=30):
+    def generate_concise_summary(self, text):
         """
-        Dynamically generates a concise, high-level overview of the video based on its transcript.
-        The overview should capture the main points and provide an understanding of what the video covers.
+        Generate a concise summary with a maximum of 1000-1200 characters.
+        Trim the input first, then summarize, and restore punctuation.
         """
-        try:
-            max_tokens = 1024
-            chunks = self._split_into_chunks(text, max_tokens)
-            summaries = []
+        # Trim input to max 3000 characters and to the nearest sentence
+        if len(text) > 3000:
+            text = self._trim_to_nearest_sentence(text[:3000])
 
-            for chunk in chunks:
-                summary = self.summarizer(chunk, max_length=max_length, min_length=min_length, do_sample=False)
-                summaries.append(summary[0]['summary_text'])
+        # Summarize the trimmed text
+        summary = summarizer(text, max_length=150, min_length=40, do_sample=False)[0]['summary_text']
 
-            # Combine the generated summaries
-            # final_summary = " ".join(summaries)
-            final_summary = summarize(" ".join(summaries))
-            cleaned_summary = clean_special_characters(final_summary.replace("</s>", "").replace("<s>", ""))
-            # ret_summ = rephrase_summary(cleaned_summary)
-            prompt = PromptTemplate(
-                input_variables=["text"],  # This should be a list of variable names
-                template="Summarize the following text:\n\n{text}",
-            )
-            llm = HuggingFacePipeline(pipeline=self.summarizer)
-            chain = LLMChain(llm=llm, prompt=prompt)
-            result = chain.run(text=cleaned_summary)
-            return result
+        # Clean the final summary
+        cleaned_summary = clean_special_characters(summary)
 
-        except Exception as e:
-            print(f"Error generating summary: {e}")
-            sentences = sent_tokenize(text)
-            # Fallback summary based on the first few sentences in case of an error
-            return " ".join(sentences[:3])
+        # If the cleaned summary exceeds 1200 characters, trim to the nearest sentence
+        if len(cleaned_summary) > 1200:
+            cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:1200])
+
+        # Restore punctuation
+        punctuated_summary = self.punctuator.restore_punctuation(cleaned_summary)
+
+        return punctuated_summary
 
     def format_transcript(self, transcript):
         """
-        Formats the transcript using an ML-based punctuation restoration model and
-        adds paragraph breaks for better readability.
+        Formats the transcript using punctuation restoration and adds paragraph breaks.
         """
         chunks = self._split_into_chunks(transcript, max_tokens=1024)
         formatted_transcript = []
@@ -89,17 +48,11 @@ class ContentAnalysis:
             punctuated_chunk = self.punctuator.restore_punctuation(chunk)
             formatted_transcript.append(punctuated_chunk)
 
-        structured_transcript = "\n\n".join(formatted_transcript)
-
-        return structured_transcript
+        return "\n\n".join(formatted_transcript)
 
     def _split_into_chunks(self, text, max_tokens):
-        """
-        Splits a given text into smaller chunks based on token limit for the punctuator and summarizer.
-        """
         words = text.split()
-        chunks = []
-        current_chunk = []
+        chunks, current_chunk = [], []
 
         for word in words:
             current_chunk.append(word)
@@ -111,3 +64,23 @@ class ContentAnalysis:
             chunks.append(" ".join(current_chunk))
 
         return chunks
+
+    def _trim_to_nearest_sentence(self, text):
+        """
+        Trims text to the nearest sentence to avoid cutting off mid-sentence.
+        """
+        sentences = sent_tokenize(text)
+        trimmed_text = ""
+        for sentence in sentences:
+            if len(trimmed_text) + len(sentence) <= len(text):
+                trimmed_text += sentence + " "
+            else:
+                break
+        return trimmed_text.strip()
+
+
+def clean_special_characters(text):
+    """
+    Removes special characters and extra whitespace.
+    """
+    return re.sub(r"[^\w\s]", "", text)
