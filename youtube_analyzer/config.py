@@ -14,6 +14,7 @@ SUMMARIZATION_MODEL_GL = os.getenv('SUMMARIZATION_MODEL_GL')
 SENTIMENT_MODEL = os.getenv('SENTIMENT_MODEL')
 LLM_MODEL_HG = os.getenv('LLM_MODEL_HG')
 LLM_MODEL_FB = os.getenv('LLM_MODEL_FB')
+LLM_MODEL_MS = os.getenv('LLM_MODEL_MS')
 
 # Logging configuration
 logging.basicConfig(

@@ -1,7 +1,12 @@
 from transformers import pipeline
 from deepmultilingualpunctuation import PunctuationModel
 import nltk
-from youtube_analyzer.config import LLM_MODEL_FB, SUMMARIZATION_MODEL_FB
+from youtube_analyzer.config import LLM_MODEL_FB, SUMMARIZATION_MODEL_FB, LLM_MODEL_MS
+from langchain.llms import HuggingFacePipeline
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from transformers import pipeline
+
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 from transformers import BartTokenizer, BartForConditionalGeneration
@@ -18,15 +23,16 @@ def clean_special_characters(text):
 
 def summarize(text):
     inputs = tokenizer.encode(text, return_tensors="pt", max_length=1024, truncation=True)
-    outputs = model.generate(inputs, max_length=150, min_length=40, length_penalty=2.0, num_beams=4, early_stopping=True)
+    outputs = model.generate(inputs, max_length=150, min_length=40, length_penalty=2.0, num_beams=4,
+                             early_stopping=True)
     return tokenizer.decode(outputs[0])
 
 
 def rephrase_summary(text):
-    pipe = pipeline("text-generation", model=LLM_MODEL_FB)
+    pipe_rp = pipeline("text-generation", model=LLM_MODEL_FB)
     prompt = f"Summarize the following text into a brief overview that explains what this video will cover, " \
              f"the main topics discussed, and what the viewer can expect to learn: {text} "
-    generated_text = pipe(prompt, max_length=150, num_return_sequences=1, do_sample=False)
+    generated_text = pipe_rp(prompt, max_length=150, num_return_sequences=1, do_sample=False)
     print(f"{generated_text=}")
 
     return generated_text[0]["generated_text"]
@@ -35,7 +41,6 @@ def rephrase_summary(text):
 class ContentAnalysis:
     def __init__(self):
         self.summarizer = pipeline("summarization", model=SUMMARIZATION_MODEL_FB)
-        # self.summarizer = Summarizer()
         self.punctuator = PunctuationModel()
 
     def generate_concise_summary(self, text, max_length=100, min_length=30):
@@ -56,10 +61,15 @@ class ContentAnalysis:
             # final_summary = " ".join(summaries)
             final_summary = summarize(" ".join(summaries))
             cleaned_summary = clean_special_characters(final_summary.replace("</s>", "").replace("<s>", ""))
-            ret_summ = rephrase_summary(cleaned_summary)
-            print(f"{ret_summ=}")
-
-            return cleaned_summary
+            # ret_summ = rephrase_summary(cleaned_summary)
+            prompt = PromptTemplate(
+                input_variables=["text"],  # This should be a list of variable names
+                template="Summarize the following text:\n\n{text}",
+            )
+            llm = HuggingFacePipeline(pipeline=self.summarizer)
+            chain = LLMChain(llm=llm, prompt=prompt)
+            result = chain.run(text=cleaned_summary)
+            return result
 
         except Exception as e:
             print(f"Error generating summary: {e}")

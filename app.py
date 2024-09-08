@@ -29,14 +29,15 @@ def main():
                     formatted_transcript = content_analysis.format_transcript(transcript)
 
                     # Sentiment analysis
-                    sentiment_score = sentiment_analysis.analyze_sentiment(comments)
-                    effectiveness = sentiment_analysis.evaluate_effectiveness(sentiment_score)
-                    most_positive_comment = sentiment_analysis.get_most_positive_comment(comments)
-                    most_engaging_comment = sentiment_analysis.get_most_engaging_comment(comments)
+                    sentiment_result = sentiment_analysis.analyze_sentiment(comments)
+                    sentiment_score = sentiment_result["average_sentiment_score"]
+                    effectiveness = sentiment_result["effectiveness"]
+                    most_positive_comment = sentiment_result["most_positive_comment"]
+                    most_engaging_comment = sentiment_result["most_engaging_comment"]
 
                     # Clean up comment text to remove special characters
-                    most_engaging_comment = most_engaging_comment.replace("<br>", "")
-                    most_positive_comment = most_positive_comment.replace("<br>", "")
+                    # most_engaging_comment = most_engaging_comment.replace("<br>", "")
+                    # most_positive_comment = most_positive_comment.replace("<br>", "")
 
                     # Display the results in different tabs
                     tab1, tab2, tab3 = st.tabs(["Brief Summary", "Full Transcript", "Sentiment Analysis"])
@@ -60,9 +61,9 @@ def main():
                         st.write(f"Average Sentiment Score: {sentiment_score:.2f}")
                         st.write(f"Video Effectiveness: {effectiveness}")
                         st.subheader("Most Positive Comment")
-                        st.write(most_positive_comment)
+                        st.markdown(most_positive_comment, unsafe_allow_html=True)
                         st.subheader("Most Engaging Comment")
-                        st.write(most_engaging_comment)
+                        st.markdown(most_engaging_comment, unsafe_allow_html=True)
                 else:
                     st.error("Unable to fetch video transcript. Please check the video URL and try again.")
         else:
