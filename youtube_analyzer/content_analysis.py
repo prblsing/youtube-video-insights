@@ -1,7 +1,7 @@
 from transformers import pipeline
 from deepmultilingualpunctuation import PunctuationModel
 import nltk
-from youtube_analyzer.config import LLM_MODEL_FB, SUMMARIZATION_MODEL_FB
+from youtube_analyzer.config import SUMMARIZATION_MODEL_FB
 nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 from transformers import BartTokenizer, BartForConditionalGeneration
@@ -22,14 +22,14 @@ def summarize(text):
     return tokenizer.decode(outputs[0])
 
 
-def rephrase_summary(text):
-    pipe = pipeline("text-generation", model=LLM_MODEL_FB)
-    prompt = f"Summarize the following text into a brief overview that explains what this video will cover, " \
-             f"the main topics discussed, and what the viewer can expect to learn: {text} "
-    generated_text = pipe(prompt, max_length=150, num_return_sequences=1, do_sample=False)
-    print(f"{generated_text=}")
-
-    return generated_text[0]["generated_text"]
+# def rephrase_summary(text):
+#     pipe = pipeline("text-generation", model=LLM_MODEL_FB)
+#     prompt = f"Summarize the following text into a brief overview that explains what this video will cover, " \
+#              f"the main topics discussed, and what the viewer can expect to learn: {text} "
+#     generated_text = pipe(prompt, max_length=150, num_return_sequences=1, do_sample=False)
+#     print(f"{generated_text=}")
+#
+#     return generated_text[0]["generated_text"]
 
 
 class ContentAnalysis:
@@ -56,8 +56,9 @@ class ContentAnalysis:
             # final_summary = " ".join(summaries)
             final_summary = summarize(" ".join(summaries))
             cleaned_summary = clean_special_characters(final_summary.replace("</s>", "").replace("<s>", ""))
-            ret_summ = rephrase_summary(cleaned_summary)
-            print(f"{ret_summ=}")
+            # ret_summ = rephrase_summary(cleaned_summary)
+            # print(f"{ret_summ=}")
+            print(f"{cleaned_summary=}")
 
             return cleaned_summary
 
