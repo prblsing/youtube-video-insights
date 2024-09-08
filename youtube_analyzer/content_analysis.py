@@ -1,8 +1,22 @@
 from transformers import pipeline
 from deepmultilingualpunctuation import PunctuationModel
 from youtube_analyzer.config import SUMMARIZATION_MODEL_FB
-from nltk.tokenize import sent_tokenize
 import re
+import nltk
+from nltk.data import find
+from nltk import sent_tokenize
+
+
+def download_punkt_if_needed():
+    try:
+        # Check if the 'punkt' tokenizer is already downloaded
+        find('tokenizers/punkt.zip')
+    except LookupError:
+        # Download 'punkt' tokenizer if it's not available
+        nltk.download('punkt')
+
+
+download_punkt_if_needed()
 
 # Load summarization and punctuation restoration models
 summarizer = pipeline("summarization", model=SUMMARIZATION_MODEL_FB)
