@@ -6,6 +6,41 @@ from youtube_analyzer.utils import extract_video_id
 
 
 def main():
+    # Apply custom CSS for the theme
+    st.markdown("""
+        <style>
+            body {
+                background-color: #2C3E50;
+            }
+            .stTextInput label {
+                color: #F39C12;
+            }
+            .stTextInput input {
+                background-color: #fff;
+                color: #2C3E50;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 16px;
+            }
+            .stButton button {
+                background-color: #F39C12;
+                color: white;
+                border-radius: 8px;
+                font-size: 16px;
+            }
+            .stButton button:disabled {
+                background-color: #D35400;
+                color: #AAB7B8;
+                cursor: not-allowed;
+            }
+            .stDownloadButton button {
+                background-color: #F39C12;
+                color: white;
+                border-radius: 8px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title("YouTube Video Analyzer")
 
     youtube_interaction = YouTubeInteraction()
@@ -13,9 +48,18 @@ def main():
     sentiment_analysis = SentimentAnalysis()
 
     video_url = st.text_input("Enter YouTube Video URL:")
-    if video_url:
-        video_id = extract_video_id(video_url)
+    video_id = extract_video_id(video_url) if video_url else None
 
+    # Disable the refresh button while no video URL is entered or analysis is ongoing
+    if video_url and video_id:
+        refresh_button_disabled = False
+    else:
+        refresh_button_disabled = True
+
+    if st.button("Refresh", disabled=refresh_button_disabled):
+        st.experimental_rerun()
+
+    if video_url:
         if video_id:
             with st.spinner("Analyzing video..."):
                 transcript = youtube_interaction.get_transcript(video_id)
@@ -34,10 +78,6 @@ def main():
                     effectiveness = sentiment_result["effectiveness"]
                     most_positive_comment = sentiment_result["most_positive_comment"]
                     most_engaging_comment = sentiment_result["most_engaging_comment"]
-
-                    # Clean up comment text to remove special characters
-                    # most_engaging_comment = most_engaging_comment.replace("<br>", "")
-                    # most_positive_comment = most_positive_comment.replace("<br>", "")
 
                     # Display the results in different tabs
                     tab1, tab2, tab3 = st.tabs(["Brief Summary", "Full Transcript", "Sentiment Analysis"])
