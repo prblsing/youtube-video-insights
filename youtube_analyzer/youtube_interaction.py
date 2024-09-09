@@ -2,7 +2,6 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from googleapiclient.discovery import build
 from youtube_analyzer.config import YOUTUBE_API_KEY, logger
 
-
 class YouTubeInteraction:
     def __init__(self):
         self.youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
