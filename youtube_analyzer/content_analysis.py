@@ -61,7 +61,7 @@ class ContentAnalysis:
             # text = self.punctuator.restore_punctuation(text)
 
             # Trim input to max 5000 characters and to the nearest sentence
-            if len(text) > 5000:
+            if len(text) > 3000:
                 text = self._trim_to_nearest_sentence(text[:5000])
                 logger.info("Input text trimmed to 5000 characters.")
 
