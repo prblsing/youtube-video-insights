@@ -15,7 +15,6 @@ class SentimentAnalysis:
         max_engagement = 0
 
         for comment in comments:
-            # Truncate comment if needed
             truncated_comment = self._truncate_text(comment)
             try:
                 # Perform sentiment analysis on the truncated comment
@@ -29,20 +28,20 @@ class SentimentAnalysis:
                 # Track the most positive comment
                 if score > highest_sentiment_score:
                     highest_sentiment_score = score
-                    most_positive_comment = comment
+                    most_positive_comment = truncated_comment
 
                 # Track the most engaging comment (based on length or engagement metric)
                 if len(comment) > max_engagement:
                     max_engagement = len(comment)
-                    most_engaging_comment = comment
+                    most_engaging_comment = truncated_comment
 
             except Exception as e:
                 logger.error(f"Error analyzing sentiment for comment: {e}")
 
-        # Calculate the average sentiment score
+        # Calculate average sentiment score
         average_sentiment_score = total_score / sentiment_count if sentiment_count > 0 else 0
 
-        # Calculate effectiveness based on the average score
+        # Determine effectiveness
         effectiveness = self.evaluate_effectiveness(average_sentiment_score)
 
         return {
