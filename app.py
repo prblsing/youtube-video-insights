@@ -1,4 +1,5 @@
 import streamlit as st
+import sys  # Required for monkey-patching
 from youtube_analyzer.youtube_interaction import YouTubeInteraction
 from youtube_analyzer.content_analysis import ContentAnalysis
 from youtube_analyzer.sentiment_analysis import SentimentAnalysis
@@ -7,7 +8,34 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Custom Batman-themed exception handler
+def exception_handler(e):
+    """
+    Custom error handling for uncaught exceptions.
+    Displays an image of a masked character and a friendly error message when things go wrong.
+    """
+    # Display Batman-themed image when an error occurs
+    st.image(
+        'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDY0ZHFkMHA5N21hanpnZGpnazNsNGg4ZWJ1ZnptMmdqaDJiNDVwbyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6la5HPkiGrzFlEUYHp/giphy.gif',
+        caption="I need a sidekick!"
+    )
 
+    # Friendly message to indicate an issue, like Batman calling for a sidekick to solve the problem
+    st.error(
+        f"Oops! Something went wrong with a {type(e).__name__}. Looks like even Batman needs a sidekick sometimes to fix things! 🦇"
+    )
+
+    # Write the full error to help with debugging in case needed (for development environments)
+    st.write(f"Full error details: {e}")
+
+    # Re-raise the error to ensure it's logged appropriately in console or monitoring tools
+    raise e
+
+# Monkey-patch streamlit's error handling to use the custom Batman-themed handler
+error_util = sys.modules['streamlit.error_util']
+error_util.handle_uncaught_app_exception.__code__ = exception_handler.__code__
+
+# Application code continues
 def main():
     st.title("YouTube Video Analyzer")
 
@@ -87,12 +115,12 @@ def main():
                         st.error("Unable to fetch video transcript. Please check the video URL and try again.")
 
                 except Exception as e:
+                    # This will call the custom Batman-themed error handler
                     st.error("An unexpected error occurred during video analysis. Please try again later.")
                     logger.error(f"Error during video analysis: {str(e)}")
 
         else:
             st.error("Invalid YouTube URL. Please enter a valid URL.")
-
 
 if __name__ == "__main__":
     main()
