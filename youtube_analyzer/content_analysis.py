@@ -31,52 +31,64 @@ class ContentAnalysis:
     def generate_concise_summary(self, text):
         """
         Generate a concise summary with a maximum of 1000-1200 characters.
-        Trim the input first, then summarize, and restore punctuation.
+        If an error occurs, return a user-friendly message.
         """
-        # Trim input to max 3000 characters and to the nearest sentence
-        if len(text) > 5000:
-            text = self._trim_to_nearest_sentence(text[:5000])
+        try:
+            # Trim input to max 3000 characters and to the nearest sentence
+            if len(text) > 5000:
+                text = self._trim_to_nearest_sentence(text[:5000])
 
-        # Split the text into smaller chunks if it's too long for the model to handle in one go
-        chunks = self._split_into_chunks(text, max_tokens=512)
-        summaries = []
+            # Split the text into smaller chunks if it's too long for the model to handle in one go
+            chunks = self._split_into_chunks(text, max_tokens=512)
+            summaries = []
 
-        # Summarize each chunk and store the results
-        for chunk in chunks:
-            try:
-                summary = self.summarizer(chunk, max_length=200, min_length=50, do_sample=False)[0]['summary_text']
-                summaries.append(summary)
-            except IndexError as e:
-                print(f"Error summarizing chunk: {str(e)}")
-                continue
+            # Summarize each chunk and store the results
+            for chunk in chunks:
+                try:
+                    summary = self.summarizer(chunk, max_length=200, min_length=50, do_sample=False)[0]['summary_text']
+                    summaries.append(summary)
+                except Exception as e:
+                    print(f"Error summarizing chunk: {str(e)}")
+                    continue
 
-        # Combine all summaries
-        combined_summary = " ".join(summaries)
+            # Combine all summaries
+            combined_summary = " ".join(summaries)
 
-        # Clean the final summary
-        cleaned_summary = clean_special_characters(combined_summary)
+            # Clean the final summary
+            cleaned_summary = clean_special_characters(combined_summary)
 
-        # If the cleaned summary exceeds 3000 characters, trim to the nearest sentence
-        if len(cleaned_summary) > 3000:
-            cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:3000])
+            # If the cleaned summary exceeds 3000 characters, trim to the nearest sentence
+            if len(cleaned_summary) > 3000:
+                cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:3000])
 
-        # Restore punctuation
-        punctuated_summary = self.punctuator.restore_punctuation(cleaned_summary)
+            # Restore punctuation
+            punctuated_summary = self.punctuator.restore_punctuation(cleaned_summary)
 
-        return punctuated_summary
+            return punctuated_summary
+
+        except Exception as e:
+            # Log the error (can also be saved to a log file or shown in the console)
+            print(f"Error generating summary: {str(e)}")
+            # Return a user-friendly message
+            return "Unable to generate summary for this video. Please try another video."
 
     def format_transcript(self, transcript):
         """
         Formats the transcript using punctuation restoration and adds paragraph breaks.
         """
-        chunks = self._split_into_chunks(transcript, max_tokens=512)
-        formatted_transcript = []
+        try:
+            chunks = self._split_into_chunks(transcript, max_tokens=512)
+            formatted_transcript = []
 
-        for chunk in chunks:
-            punctuated_chunk = self.punctuator.restore_punctuation(chunk)
-            formatted_transcript.append(punctuated_chunk)
+            for chunk in chunks:
+                punctuated_chunk = self.punctuator.restore_punctuation(chunk)
+                formatted_transcript.append(punctuated_chunk)
 
-        return "\n\n".join(formatted_transcript)
+            return "\n\n".join(formatted_transcript)
+
+        except Exception as e:
+            print(f"Error formatting transcript: {str(e)}")
+            return "Unable to format transcript."
 
     def _split_into_chunks(self, text, max_tokens):
         """
