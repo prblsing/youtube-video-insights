@@ -1,3 +1,12 @@
+import streamlit as st
+from youtube_analyzer.youtube_interaction import YouTubeInteraction
+from youtube_analyzer.content_analysis import ContentAnalysis
+from youtube_analyzer.sentiment_analysis import SentimentAnalysis
+from youtube_analyzer.utils import extract_video_id
+import logging
+
+logger = logging.getLogger(__name__)
+
 def main():
     st.title("YouTube Video Analyzer")
 
@@ -58,3 +67,7 @@ def main():
                     logger.error(f"Error during video analysis: {str(e)}")
         else:
             st.error("Invalid YouTube URL. Please enter a valid URL.")
+
+
+if __name__ == "__main__":
+    main()
