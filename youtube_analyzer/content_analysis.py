@@ -26,6 +26,7 @@ punctuator = PunctuationModel()
 class ContentAnalysis:
     def __init__(self):
         self.punctuator = punctuator
+        self.summarizer = summarizer
 
     def generate_concise_summary(self, text):
         """
@@ -36,14 +37,18 @@ class ContentAnalysis:
         if len(text) > 5000:
             text = self._trim_to_nearest_sentence(text[:5000])
 
-        # Split the text into smaller chunks if it's too long
-        chunks = self._split_into_chunks(text, max_tokens=1024)
+        # Split the text into smaller chunks if it's too long for the model to handle in one go
+        chunks = self._split_into_chunks(text, max_tokens=512)
         summaries = []
 
         # Summarize each chunk and store the results
         for chunk in chunks:
-            summary = summarizer(chunk, max_length=500, min_length=150, do_sample=False)[0]['summary_text']
-            summaries.append(summary)
+            try:
+                summary = self.summarizer(chunk, max_length=200, min_length=50, do_sample=False)[0]['summary_text']
+                summaries.append(summary)
+            except IndexError as e:
+                print(f"Error summarizing chunk: {str(e)}")
+                continue
 
         # Combine all summaries
         combined_summary = " ".join(summaries)
@@ -51,7 +56,7 @@ class ContentAnalysis:
         # Clean the final summary
         cleaned_summary = clean_special_characters(combined_summary)
 
-        # If the cleaned summary exceeds 1200 characters, trim to the nearest sentence
+        # If the cleaned summary exceeds 3000 characters, trim to the nearest sentence
         if len(cleaned_summary) > 3000:
             cleaned_summary = self._trim_to_nearest_sentence(cleaned_summary[:3000])
 
@@ -64,7 +69,7 @@ class ContentAnalysis:
         """
         Formats the transcript using punctuation restoration and adds paragraph breaks.
         """
-        chunks = self._split_into_chunks(transcript, max_tokens=1024)
+        chunks = self._split_into_chunks(transcript, max_tokens=512)
         formatted_transcript = []
 
         for chunk in chunks:
