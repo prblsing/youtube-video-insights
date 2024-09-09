@@ -36,11 +36,20 @@ class ContentAnalysis:
         if len(text) > 5000:
             text = self._trim_to_nearest_sentence(text[:5000])
 
-        # Summarize the trimmed text
-        summary = summarizer(text, max_length=500, min_length=150, do_sample=False)[0]['summary_text']
+        # Split the text into smaller chunks if it's too long
+        chunks = self._split_into_chunks(text, max_tokens=1024)
+        summaries = []
+
+        # Summarize each chunk and store the results
+        for chunk in chunks:
+            summary = summarizer(chunk, max_length=500, min_length=150, do_sample=False)[0]['summary_text']
+            summaries.append(summary)
+
+        # Combine all summaries
+        combined_summary = " ".join(summaries)
 
         # Clean the final summary
-        cleaned_summary = clean_special_characters(summary)
+        cleaned_summary = clean_special_characters(combined_summary)
 
         # If the cleaned summary exceeds 1200 characters, trim to the nearest sentence
         if len(cleaned_summary) > 3000:
@@ -65,6 +74,9 @@ class ContentAnalysis:
         return "\n\n".join(formatted_transcript)
 
     def _split_into_chunks(self, text, max_tokens):
+        """
+        Splits the text into smaller chunks to ensure they fit within the model's token limit.
+        """
         words = text.split()
         chunks, current_chunk = [], []
 
